@@ -3,29 +3,32 @@ package com.example.demo;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-
-import static com.example.demo.TicTacToe.isGameOver;
-import static com.example.demo.TicTacToe.wins;
+import java.util.*;
 
 public class TicTacToeFX extends Application {
 
-    private static final char HUMAN = 'O';
-    private static final char COMP = 'X';
+    private static final char player = 'O';
+    private static final char ai = 'X';
     private static final char EMPTY = ' ';
-    private char currentPlayer = HUMAN;
+    private int humanWins = 0;
+    private int compWins = 0;
+    private int gamesPlayed = 0;
+    private String seriesWinner = "";
+    private Label humanWinsLabel = new Label("Human Win 0");
+    private Label compWinsLabel = new Label("Computer Win 0");
+
+    private char currentPlayer = player;
     private Button[][] buttons = new Button[3][3];
     private static char[][] board = new char[3][3];
 
     static {
-        // Initialize board
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 board[i][j] = EMPTY;
@@ -36,10 +39,11 @@ public class TicTacToeFX extends Application {
     @Override
     public void start(Stage primaryStage) {
         GridPane grid = new GridPane();
+        grid.add(humanWinsLabel, 0, 3, 2, 1);
+        grid.add(compWinsLabel, 1, 3, 2, 1);
 
-        // Determine the initial player randomly
         Random random = new Random();
-        currentPlayer = (random.nextBoolean()) ? HUMAN : COMP;
+        currentPlayer = (random.nextBoolean()) ? player : ai;
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -58,8 +62,7 @@ public class TicTacToeFX extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        // If the initial player is COMP, start the game by calling aiTurn
-        if (currentPlayer == COMP) {
+        if (currentPlayer == ai) {
             aiTurn();
         }
     }
@@ -80,8 +83,8 @@ public class TicTacToeFX extends Application {
         } else if (isGameOver()) {
             announceDraw();
         } else {
-            currentPlayer = (currentPlayer == HUMAN) ? COMP : HUMAN;
-            if (currentPlayer == COMP) {
+            currentPlayer = (currentPlayer == player) ? ai : player;
+            if (currentPlayer == ai) {
                 aiTurn();
             }
         }
@@ -91,39 +94,58 @@ public class TicTacToeFX extends Application {
 
 
     private void aiTurn() {
-        // Find the best move for the AI using minimax
-        TicTacToe.Move bestMove = minimax(0, COMP);
+        TicTacToe.Move bestMove = minimax(0, ai);
 
-        // Update the board with the AI's move
-        board[bestMove.row][bestMove.col] = COMP;
+        board[bestMove.row][bestMove.col] = ai;
 
-        // Update the corresponding button text
-        buttons[bestMove.row][bestMove.col].setText(String.valueOf(COMP));
+        buttons[bestMove.row][bestMove.col].setText(String.valueOf(ai));
 
-        // Check if the AI has won
-        if (wins(COMP)) {
-            announceWinner(COMP);
+        if (wins(ai)) {
+            announceWinner(ai);
         } else if (isGameOver()) {
             announceDraw();
         } else {
-            // Switch to the human player's turn
-            currentPlayer = HUMAN;
+            currentPlayer = player;
         }
     }
 
     private void announceWinner(char player) {
-        String message = (player == HUMAN) ? "You have won!" : "Computer has won!";
-        showAlert("Game Over", message);
+        gamesPlayed++;
+
+        if (player == TicTacToeFX.player) {
+            humanWins++;
+            humanWinsLabel.setText("Human Wins: " + humanWins);
+        } else {
+            compWins++;
+            compWinsLabel.setText("Computer Wins: " + compWins);
+        }
+
+        showAlert("Round Over", (player == TicTacToeFX.player) ? "You won!" : "Computer won ");
+
+        if (humanWins == 3 || compWins == 3) {
+            seriesWinner = (humanWins == 3) ? "Human" : "Computer";
+            showAlert("Series Over", seriesWinner + " wins the series!");
+            resetGame();
+            return;
+        }
+
+        if (gamesPlayed == 5 && seriesWinner.isEmpty()) {
+            showAlert("Series Over", "it's a tie!");
+            resetGame();
+            return;
+        }
+
         resetGame();
     }
 
+
     private void announceDraw() {
-        showAlert("Game Over", "It's a draw!");
+        showAlert("Game Over", "draw!");
         resetGame();
     }
 
     private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
@@ -131,33 +153,52 @@ public class TicTacToeFX extends Application {
     }
 
     private void resetGame() {
-        // Clear the board and reset the current player to the human player
-        currentPlayer = HUMAN;
+        if (!seriesWinner.isEmpty() || gamesPlayed == 5) {
+            String finalMessage = seriesWinner.isEmpty() ? "tie!" : seriesWinner + " wins ";
+            showAlert("Series Over", finalMessage);
+
+            Alert confirmDialog = new Alert(AlertType.CONFIRMATION, "another series?", ButtonType.YES, ButtonType.NO);
+            confirmDialog.setTitle("Play Again?");
+            confirmDialog.setHeaderText(null);
+
+            Optional<ButtonType> result = confirmDialog.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.YES) {
+                humanWins = 0;
+                compWins = 0;
+                gamesPlayed = 0;
+                seriesWinner = "";
+            } else {
+                System.exit(0);
+            }
+        }
+
+        humanWinsLabel.setText("Human Wins: " + humanWins);
+        compWinsLabel.setText("Computer Wins: " + compWins);
+
+        currentPlayer = player;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 board[i][j] = EMPTY;
                 buttons[i][j].setText("");
             }
-
         }
+
         Random random = new Random();
-        currentPlayer = (random.nextBoolean()) ? HUMAN : COMP;
-        if (currentPlayer == COMP) {
+        currentPlayer = (random.nextBoolean()) ? player : ai;
+        if (currentPlayer == ai) {
             aiTurn();
         }
-
-        System.out.println (currentPlayer );
     }
 
     public static TicTacToe.Move minimax(int depth, char player) {
         List<TicTacToe.Move> emptyCells = getEmptyCells();
 
         TicTacToe.Move bestMove = new TicTacToe.Move();
-        if (player == COMP) {
+        if (player == ai) {
             int bestScore = Integer.MIN_VALUE;
             for (TicTacToe.Move move : emptyCells) {
-                board[move.row][move.col] = COMP;
-                int score = minimax(depth + 1, HUMAN).score;
+                board[move.row][move.col] = ai;
+                int score = minimax(depth + 1, TicTacToeFX.player).score;
                 board[move.row][move.col] = EMPTY;
                 if (score > bestScore) {
                     bestScore = score;
@@ -167,8 +208,8 @@ public class TicTacToeFX extends Application {
         } else {
             int bestScore = Integer.MAX_VALUE;
             for (TicTacToe.Move move : emptyCells) {
-                board[move.row][move.col] = HUMAN;
-                int score = minimax(depth + 1, COMP).score;
+                board[move.row][move.col] = TicTacToeFX.player;
+                int score = minimax(depth + 1, ai).score;
                 board[move.row][move.col] = EMPTY;
                 if (score < bestScore) {
                     bestScore = score;
@@ -181,10 +222,10 @@ public class TicTacToeFX extends Application {
     }
 
     public static int evaluate() {
-        if (wins(COMP)) {
+        if (wins(ai)) {
             return 1;
         }
-        if (wins(HUMAN)) {
+        if (wins(player)) {
             return -1;
         }
         return 0;
@@ -204,18 +245,18 @@ public class TicTacToeFX extends Application {
         return emptyCells;
     }
     public static boolean isGameOver() {
-        return wins(HUMAN) || wins(COMP) || isBoardFull();
+        return wins(player) || wins(ai) || isBoardFull();
     }
 
     public static boolean isBoardFull() {
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
                 if (board[row][col] == EMPTY) {
-                    return false; // There is an empty cell, the game is not over
+                    return false;
                 }
             }
         }
-        return true; // All cells are filled, the game is a draw
+        return true;
     }
 
     public static boolean wins(char player) {
@@ -241,20 +282,10 @@ public class TicTacToeFX extends Application {
             return true;
         }
 
-        return false; // No winning condition found
+        return false;
     }
-
-
-
-
-
-
-
-// Implement other methods from your original TicTacToe class here
-// Such as minimax, wins, isGameOver, etc.
 
     public static void main(String[] args) {
         launch(args);
     }
 }
-

@@ -1,5 +1,6 @@
 package com.example.demo;
 
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -12,28 +13,20 @@ public class TicTacToe {
     }
 
     static char[][] board = new char[3][3];
-    static final char HUMAN = 'O';
-    static final char COMP = 'X';
+    static final char player = 'O';
+    static final char ai = 'X';
     static final char EMPTY = ' ';
 
-    // Initialize board
-    static {
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                board[i][j] = EMPTY;
-            }
-        }
-    }
+
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        char hChoice = HUMAN;
-        char cChoice = COMP;
+        char hChoice = player;
+        char cChoice = ai;
         char first = ' ';
 
         // Main game loop
         while (!isGameOver()) {
-            printBoard();
             if (first == ' ') {
                 System.out.println("Do you want to start first? (Y/N): ");
                 first = scanner.next().toUpperCase().charAt(0);
@@ -48,10 +41,9 @@ public class TicTacToe {
             aiTurn();
         }
 
-        printBoard();
-        if (wins(COMP)) {
+        if (wins(ai)) {
             System.out.println("Computer has won");
-        } else if (wins(HUMAN)) {
+        } else if (wins(player)) {
             System.out.println("You have won");
         } else {
             System.out.println("It's a draw");
@@ -60,7 +52,7 @@ public class TicTacToe {
     }
 
     public static boolean isGameOver() {
-        return wins(HUMAN) || wins(COMP) || getEmptyCells().isEmpty();
+        return wins(player) || wins(ai) || getEmptyCells().isEmpty();
     }
 
     public static List<Move> getEmptyCells() {
@@ -94,19 +86,19 @@ public class TicTacToe {
     }
 
     public static void aiTurn() {
-        Move bestMove = minimax(0, COMP);
-        board[bestMove.row][bestMove.col] = COMP;
+        Move bestMove = minimax(0, ai);
+        board[bestMove.row][bestMove.col] = ai;
     }
 
     public static Move minimax(int depth, char player) {
         List<Move> emptyCells = getEmptyCells();
 
         Move bestMove = new Move();
-        if (player == COMP) {
+        if (player == ai) {
             int bestScore = Integer.MIN_VALUE;
             for (Move move : emptyCells) {
-                board[move.row][move.col] = COMP;
-                int score = minimax(depth + 1, HUMAN).score;
+                board[move.row][move.col] = ai;
+                int score = minimax(depth + 1, TicTacToe.player).score;
                 board[move.row][move.col] = EMPTY;
                 if (score > bestScore) {
                     bestScore = score;
@@ -116,8 +108,8 @@ public class TicTacToe {
         } else {
             int bestScore = Integer.MAX_VALUE;
             for (Move move : emptyCells) {
-                board[move.row][move.col] = HUMAN;
-                int score = minimax(depth + 1, COMP).score;
+                board[move.row][move.col] = TicTacToe.player;
+                int score = minimax(depth + 1, ai).score;
                 board[move.row][move.col] = EMPTY;
                 if (score < bestScore) {
                     bestScore = score;
@@ -130,10 +122,10 @@ public class TicTacToe {
     }
 
     public static int evaluate() {
-        if (wins(COMP)) {
+        if (wins(ai)) {
             return 1;
         }
-        if (wins(HUMAN)) {
+        if (wins(player)) {
             return -1;
         }
         return 0;
@@ -146,7 +138,7 @@ public class TicTacToe {
             int row = scanner.nextInt() - 1;
             int col = scanner.nextInt() - 1;
             if (row >= 0 && row < 3 && col >= 0 && col < 3 && board[row][col] == EMPTY) {
-                board[row][col] = HUMAN;
+                board[row][col] = player;
                 validMove = true;
             } else {
                 System.out.println("Invalid move! Try again.");
@@ -154,14 +146,5 @@ public class TicTacToe {
         } while (!validMove);
     }
 
-    public static void printBoard() {
-        System.out.println("-----------");
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                System.out.print("| " + board[i][j] + " ");
-            }
-            System.out.println("|");
-            System.out.println("-----------");
-        }
-    }
+
 }
